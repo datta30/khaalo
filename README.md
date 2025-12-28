@@ -16,7 +16,7 @@ Built specifically for Indian cuisine with AI-powered meal scoring and personali
 ### 🚀 Quick Links
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Khaalo-00C853?style=for-the-badge)](https://khaalo.netlify.app/)
-[![Video Demo](https://img.shields.io/badge/▶️_Video_Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=S1BMvy7bzYg)
+[![Video Demo](https://img.shields.io/badge/▶️_Video_Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=pXc_gnaWViM)
 
 ---
 
