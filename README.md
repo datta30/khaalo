@@ -159,7 +159,6 @@ Create a `.env` file in the root directory:
 VITE_OPENAI_API_KEY=sk-your-openai-api-key-here
 ```
 
-> ⚠️ **Important**: Never commit your `.env` file! It's already in `.gitignore`.
 
 4. **Start development server**
 ```bash
@@ -211,52 +210,13 @@ Enable browser notifications in Settings → "Enable Reminders" to receive:
 - Water reminders (every 2 hours, 8 AM - 10 PM)
 - Meal reminders (at typical Indian meal times)
 
-## 🌐 Deployment
-
-### Netlify (Recommended)
-
-**⚠️ Security Warning**: The current implementation exposes your OpenAI API key in client-side code. Before deploying to production, you should:
-
-1. Move OpenAI API calls to serverless functions (Netlify Functions)
-2. Keep API keys server-side only
-
-**Current Quick Deploy** (NOT for production):
-```bash
-# Build
-npm run build
-
-# Deploy (you'll need to configure VITE_OPENAI_API_KEY in Netlify dashboard)
-# Note: Netlify will block deployment if it detects the API key in the build
-```
-
-### Other Platforms
-- **Vercel**: `vercel deploy`
-- **GitHub Pages**: Requires hash router setup
-- **Docker**: Use the Dockerfile (to be created)
 
 ## 🐛 Known Issues
 
-- **API Key Exposure**: OpenAI API key is currently bundled in client code (see Security Notes)
+- **API Key Exposure**: OpenAI API key is currently bundled in client code
 - **Offline AI**: AI features require internet; fallback data is used offline
 - **Browser Support**: Push notifications require browser permission
 
-## 🛡️ Security Notes
-
-> **CRITICAL**: This app currently makes OpenAI API calls directly from the browser, which exposes your API key. For production deployments, you MUST:
-
-1. Create serverless functions (Netlify/Vercel Functions)
-2. Move all OpenAI API logic server-side
-3. Remove `VITE_OPENAI_API_KEY` from environment variables
-4. Use server-only API keys
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
 
 ## 📄 License
 
