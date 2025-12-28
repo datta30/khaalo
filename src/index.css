@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --duo-green: #58CC02;
+  --duo-green-dark: #4CAD00;
+  --duo-orange: #FF9600;
+  --duo-gold: #FFC800;
+  --duo-blue: #1CB0F6;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Nunito', system-ui, sans-serif;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7F7F7 100%);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Duolingo-style button 3D effect */
+@layer components {
+  .btn-3d {
+    @apply relative font-bold rounded-2xl transition-all duration-100;
+    transform: translateY(0);
+  }
+  
+  .btn-3d:active {
+    transform: translateY(4px);
+    @apply border-b-0;
+  }
+  
+  .btn-3d-green {
+    @apply bg-duo-green text-white border-b-4 border-duo-green-dark;
+  }
+  
+  .btn-3d-gray {
+    @apply bg-duo-gray-200 text-duo-gray-400 border-b-4 border-duo-gray-300;
+  }
+  
+  .btn-3d-orange {
+    @apply bg-duo-orange text-white border-b-4 border-duo-orange-dark;
+  }
+}
+
+/* Progress bar styles */
+.progress-bar-container {
+  @apply w-full h-4 bg-duo-gray-200 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full rounded-full transition-all duration-500 ease-out;
+}
+
+/* Card styles */
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Path node styles */
+.node-completed {
+  @apply bg-duo-gold;
+}
+
+.node-current {
+  @apply bg-duo-green animate-pulse-glow;
+}
+
+.node-locked {
+  @apply bg-duo-gray-200;
+}
+
+/* Bottom sheet animation */
+.bottom-sheet {
+  @apply fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E5E5E5;
+  border-radius: 3px;
+}
+
+/* Safe area padding for iOS */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 20px);
+}
