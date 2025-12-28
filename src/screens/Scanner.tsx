@@ -105,7 +105,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                             gutHealthReason: scores.gutHealthReason,
                             imageUrl: base64,
                             cuisine: result.cuisine,
-                            sodium: result.estimatedSodium || 800
+                            sodium: result.estimatedSodium || 500,
+                            servingSize: scores.suggestedServingSize || '1 serving'
                         });
                         setShowScoreCard(true);
                     }

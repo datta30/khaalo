@@ -1,10 +1,37 @@
 # 🍽️ Khaalo - Gamified Indian Meal Planner
 
-A beautiful, gamified Progressive Web App (PWA) that helps you track nutrition like playing a game! Built specifically for Indian cuisine with AI-powered meal scoring and personalized recommendations.
+<div align="center">
 
-![Khaalo Banner](https://img.shields.io/badge/Made%20with-React-61DAFB?style=for-the-badge&logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+**A beautiful, gamified Progressive Web App (PWA) that helps you track nutrition like playing a game!**  
+Built specifically for Indian cuisine with AI-powered meal scoring and personalized recommendations.
+
+---
+
+### 🎯 Built for **Innov-AI-tion**
+
+**Team:** Datta • Vardhan • Poojita • Lithika
+
+---
+
+### 🚀 Quick Links
+
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Khaalo-00C853?style=for-the-badge)](https://khaalo.netlify.app/)
+[![Video Demo](https://img.shields.io/badge/▶️_Video_Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=S1BMvy7bzYg)
+
+---
+
+### 📊 Status & Tech
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/be1a98a0-f0b8-4e2b-8f7a-a990130b2440/deploy-status)](https://app.netlify.com/projects/khaalo/deploys)
+![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![GPT-4o](https://img.shields.io/badge/GPT--4o-412991?style=flat-square&logo=openai&logoColor=white)
+
+</div>
+
+---
 
 ## ✨ Features
 
