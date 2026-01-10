@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useUserStore } from '../store/userStore';
 import { DayCard } from '../components/DayCard';
@@ -10,7 +10,28 @@ interface WeekPlannerProps {
     onNavigate: (screen: 'home' | 'scanner' | 'profile' | 'streak' | 'rank' | 'week') => void;
 }
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+// Get the dates for the current week (Monday to Sunday)
+const getWeekDates = () => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+
+    return Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(today);
+        date.setDate(today.getDate() + mondayOffset + i);
+        return date;
+    });
+};
+
+const formatDateRange = (dates: Date[]) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const start = dates[0];
+    const end = dates[6];
+    if (start.getMonth() === end.getMonth()) {
+        return `${months[start.getMonth()]} ${start.getDate()} - ${end.getDate()}`;
+    }
+    return `${months[start.getMonth()]} ${start.getDate()} - ${months[end.getMonth()]} ${end.getDate()}`;
+};
 
 export const WeekPlanner: React.FC<WeekPlannerProps> = ({ onNavigate }) => {
     const { currentPlan, completedMeals, user, completeMeal, addFoodLog } = useUserStore();
@@ -19,9 +40,9 @@ export const WeekPlanner: React.FC<WeekPlannerProps> = ({ onNavigate }) => {
     const [showScoreCard, setShowScoreCard] = useState(false);
     const [isScoring, setIsScoring] = useState(false);
 
-    // Get current day of week (0 = Monday, 6 = Sunday)
-    const today = new Date().getDay();
-    const todayIndex = today === 0 ? 6 : today - 1;
+    const weekDates = useMemo(() => getWeekDates(), []);
+    const todayStr = new Date().toDateString();
+    const todayIndex = weekDates.findIndex(d => d.toDateString() === todayStr);
 
     const handleMealClick = async (meal: Meal) => {
         setSelectedMeal(meal);
@@ -66,14 +87,14 @@ export const WeekPlanner: React.FC<WeekPlannerProps> = ({ onNavigate }) => {
 
     if (!currentPlan?.days) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center p-8">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="text-center max-w-sm">
                     <div className="text-6xl mb-4">📅</div>
                     <h2 className="text-xl font-bold text-gray-800 mb-2">No Meal Plan Yet</h2>
-                    <p className="text-gray-500 mb-4">Generate your personalized 7-day meal plan</p>
+                    <p className="text-gray-500 mb-6">Generate your personalized 7-day meal plan from the home screen</p>
                     <button
                         onClick={() => onNavigate('home')}
-                        className="px-6 py-3 bg-[#58CC02] text-white font-bold rounded-xl"
+                        className="px-6 py-3 bg-[#58CC02] text-white font-bold rounded-xl hover:bg-[#4CAF00] transition-colors"
                     >
                         Go to Home
                     </button>
@@ -85,50 +106,54 @@ export const WeekPlanner: React.FC<WeekPlannerProps> = ({ onNavigate }) => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#58CC02] to-[#7ED321] p-4 pb-6">
-                <div className="flex items-center justify-between mb-4">
+            <div className="bg-white border-b border-gray-100 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
                     <button
                         onClick={() => onNavigate('home')}
-                        className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white"
+                        className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-200"
                     >
                         ←
                     </button>
-                    <h1 className="text-xl font-bold text-white">7-Day Meal Plan</h1>
+                    <div className="text-center">
+                        <h1 className="text-lg font-bold text-gray-800">Weekly Plan</h1>
+                        <p className="text-sm text-gray-500">{formatDateRange(weekDates)}</p>
+                    </div>
                     <div className="w-10" />
-                </div>
-
-                {/* Week Overview */}
-                <div className="flex justify-between px-2">
-                    {DAYS.map((day, idx) => (
-                        <div
-                            key={day}
-                            className={`
-                                flex flex-col items-center
-                                ${idx === todayIndex ? 'opacity-100' : 'opacity-60'}
-                            `}
-                        >
-                            <span className="text-xs text-white/80">{day.slice(0, 3)}</span>
-                            <div className={`
-                                w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mt-1
-                                ${idx === todayIndex
-                                    ? 'bg-white text-[#58CC02]'
-                                    : 'bg-white/20 text-white'}
-                            `}>
-                                {idx + 1}
-                            </div>
-                        </div>
-                    ))}
                 </div>
             </div>
 
-            {/* Day Cards - Responsive Grid */}
-            <div className="p-4 -mt-2">
+            {/* Week Overview Pills */}
+            <div className="bg-white border-b border-gray-100 py-3 px-4 overflow-x-auto">
+                <div className="max-w-7xl mx-auto flex gap-2 min-w-max">
+                    {weekDates.map((date, idx) => {
+                        const isToday = idx === todayIndex;
+                        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                        return (
+                            <div
+                                key={idx}
+                                className={`
+                                    px-3 py-2 rounded-xl text-center min-w-[60px]
+                                    ${isToday
+                                        ? 'bg-[#58CC02] text-white'
+                                        : 'bg-gray-100 text-gray-600'}
+                                `}
+                            >
+                                <div className="text-xs font-medium">{days[date.getDay()]}</div>
+                                <div className="text-lg font-bold">{date.getDate()}</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Day Cards */}
+            <div className="max-w-7xl mx-auto p-4">
                 {/* Mobile: Horizontal Scroll */}
-                <div className="flex gap-4 overflow-x-auto pb-4 md:hidden snap-x snap-mandatory">
+                <div className="flex gap-4 overflow-x-auto pb-4 lg:hidden snap-x snap-mandatory -mx-4 px-4">
                     {currentPlan.days.map((day, idx) => (
                         <div key={idx} className="snap-start flex-shrink-0">
                             <DayCard
-                                dayName={DAYS[idx]}
+                                date={weekDates[idx]}
                                 dayIndex={idx}
                                 isToday={idx === todayIndex}
                                 breakfast={day.breakfast}
@@ -137,18 +162,17 @@ export const WeekPlanner: React.FC<WeekPlannerProps> = ({ onNavigate }) => {
                                 dinner={day.dinner}
                                 completedMeals={completedMeals}
                                 onMealClick={handleMealClick}
-                                compact
                             />
                         </div>
                     ))}
                 </div>
 
                 {/* Desktop: Grid */}
-                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                     {currentPlan.days.map((day, idx) => (
                         <DayCard
                             key={idx}
-                            dayName={DAYS[idx]}
+                            date={weekDates[idx]}
                             dayIndex={idx}
                             isToday={idx === todayIndex}
                             breakfast={day.breakfast}

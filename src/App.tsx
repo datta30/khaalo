@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUserStore } from './store/userStore';
+import { Landing } from './screens/Landing';
 import { Onboarding } from './screens/Onboarding';
 import { Home } from './screens/Home';
 import { Scanner } from './screens/Scanner';
@@ -8,24 +9,74 @@ import { Profile } from './screens/Profile';
 import { Streak } from './screens/Streak';
 import { Rank } from './screens/Rank';
 import { WeekPlanner } from './screens/WeekPlanner';
+import { SignInPage, useClerkUser, isClerkConfigured } from './lib/clerk';
 import './index.css';
 
 type Screen = 'home' | 'scanner' | 'profile' | 'streak' | 'rank' | 'week';
 
-function App() {
+function AppContent() {
   const { user, isOnboarding, startOnboarding } = useUserStore();
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [showSignIn, setShowSignIn] = useState(false);
+  const clerkUser = useClerkUser();
 
-  // Start onboarding if no user exists
+  // Sync Clerk user data to store when signed in
   useEffect(() => {
-    if (!user || !user.onboardingComplete) {
-      startOnboarding();
+    if (clerkUser.isClerkConfigured && clerkUser.isLoaded && clerkUser.isSignedIn && clerkUser.user) {
+      // If user is signed in but hasn't completed onboarding, prefill data from Google
+      if (!user?.onboardingComplete) {
+        // Start onboarding with prefilled Google data
+        startOnboarding();
+      }
     }
-  }, []);
+  }, [clerkUser.isLoaded, clerkUser.isSignedIn, clerkUser.user?.clerkId]);
 
   const handleNavigate = (screen: Screen) => {
     setCurrentScreen(screen);
   };
+
+  const handleGetStarted = () => {
+    if (isClerkConfigured()) {
+      // Show Clerk sign-in
+      setShowSignIn(true);
+    } else {
+      // Demo mode - skip to onboarding
+      startOnboarding();
+    }
+  };
+
+  // If Clerk is configured, check auth state
+  if (isClerkConfigured()) {
+    // Show landing page for signed out users
+    if (!clerkUser.isLoaded) {
+      // Loading state
+      return (
+        <div className="h-screen flex items-center justify-center bg-gradient-to-b from-green-50 to-white">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            className="text-5xl"
+          >
+            🍛
+          </motion.div>
+        </div>
+      );
+    }
+
+    if (!clerkUser.isSignedIn) {
+      return (
+        <>
+          <Landing onGetStarted={handleGetStarted} />
+          {showSignIn && <SignInPage onClose={() => setShowSignIn(false)} />}
+        </>
+      );
+    }
+  } else {
+    // No Clerk configured - show landing for new users
+    if (!user && !isOnboarding) {
+      return <Landing onGetStarted={handleGetStarted} />;
+    }
+  }
 
   // Show onboarding if needed
   if (isOnboarding || !user?.onboardingComplete) {
@@ -35,7 +86,7 @@ function App() {
         animate={{ opacity: 1 }}
         className="h-screen"
       >
-        <Onboarding />
+        <Onboarding clerkUser={clerkUser.user} />
       </motion.div>
     );
   }
@@ -124,6 +175,10 @@ function App() {
       </AnimatePresence>
     </div>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;

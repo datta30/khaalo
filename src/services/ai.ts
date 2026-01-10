@@ -127,13 +127,24 @@ export interface ChatContext {
     todayIndex: number;
     waterGlasses: number;
     waterGoal: number;
+    todaysCalories?: number;
+}
+
+export interface ChatAction {
+    type: string;
+    params: Record<string, unknown>;
+}
+
+export interface ChatResponse {
+    message: string;
+    action?: ChatAction | null;
 }
 
 export const chatWithAssistant = async (
     message: string,
     conversationHistory: { role: string; content: string }[],
     context: ChatContext
-): Promise<{ message: string } | null> => {
+): Promise<ChatResponse | null> => {
     try {
         const response = await fetch(`${API_BASE}/ai-chat`, {
             method: 'POST',
@@ -147,13 +158,13 @@ export const chatWithAssistant = async (
 
         if (!response.ok) {
             console.error('Chat API error:', response.status);
-            return { message: "Sorry, I'm having trouble connecting right now. Please try again." };
+            return { message: "Sorry, I'm having trouble connecting right now. Please try again.", action: null };
         }
 
         return await response.json();
     } catch (error) {
         console.error('Chat failed:', error);
-        return { message: "Sorry, I'm having trouble connecting right now. Please try again." };
+        return { message: "Sorry, I'm having trouble connecting right now. Please try again.", action: null };
     }
 };
 

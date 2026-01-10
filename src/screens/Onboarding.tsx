@@ -1,19 +1,23 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useUserStore } from '../store/userStore';
 import { Button3D } from '../components/Button3D';
 import { Mascot } from '../components/Mascot';
 
-const steps = [
-    { id: 0, title: 'Name', type: 'name' },
-    { id: 1, title: 'Gender', type: 'gender' },
-    { id: 2, title: 'Age', type: 'age' },
-    { id: 3, title: 'Body Measurements', type: 'measurements' },
-    { id: 4, title: 'Region', type: 'region' },
-    { id: 5, title: 'Goal', type: 'goal' }
-];
+interface ClerkUserData {
+    clerkId: string;
+    email: string | null;
+    name: string | null;
+    picture: string | null;
+    firstName: string | null;
+    lastName: string | null;
+}
 
-export const Onboarding: React.FC = () => {
+interface OnboardingProps {
+    clerkUser?: ClerkUserData | null;
+}
+
+export const Onboarding: React.FC<OnboardingProps> = ({ clerkUser }) => {
     const {
         user,
         onboardingStep,
@@ -23,8 +27,28 @@ export const Onboarding: React.FC = () => {
         completeOnboarding
     } = useUserStore();
 
+    // Determine which steps to show based on available Clerk data
+    const steps = useMemo(() => {
+        const allSteps = [
+            { id: 'name', title: 'Name', type: 'name' },
+            { id: 'gender', title: 'Gender', type: 'gender' },
+            { id: 'age', title: 'Age', type: 'age' },
+            { id: 'measurements', title: 'Body Measurements', type: 'measurements' },
+            { id: 'region', title: 'Region', type: 'region' },
+            { id: 'goal', title: 'Goal', type: 'goal' }
+        ];
+
+        // If we have name from Clerk (Google), skip name step
+        if (clerkUser?.name) {
+            return allSteps.filter(step => step.id !== 'name');
+        }
+
+        return allSteps;
+    }, [clerkUser?.name]);
+
+    // Initialize with Clerk data if available
     const [localValues, setLocalValues] = useState({
-        name: user?.name || '',
+        name: clerkUser?.name || user?.name || '',
         gender: user?.gender || 'male',
         age: user?.age || 25,
         weight: user?.weight || 70,
@@ -33,25 +57,44 @@ export const Onboarding: React.FC = () => {
         goal: user?.goal || 'maintain'
     });
 
+    // Update name from clerk user when it changes
+    useEffect(() => {
+        if (clerkUser?.name && !localValues.name) {
+            setLocalValues(v => ({ ...v, name: clerkUser.name || '' }));
+        }
+    }, [clerkUser?.name]);
+
+    const currentStep = steps[onboardingStep];
+
     const handleNext = () => {
-        switch (onboardingStep) {
-            case 0:
+        // Always save the current step's data
+        switch (currentStep?.type) {
+            case 'name':
                 updateUser({ name: localValues.name });
                 break;
-            case 1:
+            case 'gender':
                 updateUser({ gender: localValues.gender });
                 break;
-            case 2:
+            case 'age':
                 updateUser({ age: localValues.age });
                 break;
-            case 3:
+            case 'measurements':
                 updateUser({ weight: localValues.weight, height: localValues.height });
                 break;
-            case 4:
+            case 'region':
                 updateUser({ region: localValues.region });
                 break;
-            case 5:
-                updateUser({ goal: localValues.goal });
+            case 'goal':
+                // Save any Clerk data along with final goal
+                updateUser({
+                    goal: localValues.goal,
+                    name: localValues.name, // Ensure name is saved even if skipped
+                    ...(clerkUser ? {
+                        email: clerkUser.email || undefined,
+                        picture: clerkUser.picture || undefined,
+                        clerkId: clerkUser.clerkId
+                    } : {})
+                });
                 completeOnboarding();
                 return;
         }
@@ -59,7 +102,7 @@ export const Onboarding: React.FC = () => {
     };
 
     const progress = ((onboardingStep + 1) / steps.length) * 100;
-    const canContinue = onboardingStep === 0 ? localValues.name.trim().length >= 2 : true;
+    const canContinue = currentStep?.type === 'name' ? localValues.name.trim().length >= 2 : true;
 
     const renderStep = () => {
         switch (onboardingStep) {
@@ -112,8 +155,8 @@ export const Onboarding: React.FC = () => {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => setLocalValues(v => ({ ...v, gender: option.value as typeof localValues.gender }))}
                                     className={`w-full p-4 rounded-2xl border-2 font-bold text-lg transition-all ${localValues.gender === option.value
-                                            ? 'border-[#58CC02] bg-[#58CC02]/10 text-[#58CC02]'
-                                            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                                        ? 'border-[#58CC02] bg-[#58CC02]/10 text-[#58CC02]'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {option.label}
@@ -241,8 +284,8 @@ export const Onboarding: React.FC = () => {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setLocalValues(v => ({ ...v, region: option.value as typeof localValues.region }))}
                                     className={`p-4 rounded-2xl border-2 text-center transition-all ${localValues.region === option.value
-                                            ? 'border-[#58CC02] bg-[#58CC02]/10'
-                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                        ? 'border-[#58CC02] bg-[#58CC02]/10'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
                                         }`}
                                 >
                                     <span className="text-3xl block mb-1">{option.icon}</span>
@@ -278,8 +321,8 @@ export const Onboarding: React.FC = () => {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => setLocalValues(v => ({ ...v, goal: option.value as typeof localValues.goal }))}
                                     className={`w-full p-4 rounded-2xl border-2 text-left transition-all ${localValues.goal === option.value
-                                            ? 'border-[#58CC02] bg-[#58CC02]/10'
-                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                        ? 'border-[#58CC02] bg-[#58CC02]/10'
+                                        : 'border-gray-200 bg-white hover:border-gray-300'
                                         }`}
                                 >
                                     <span className={`font-bold text-lg block ${localValues.goal === option.value ? 'text-[#58CC02]' : 'text-gray-700'}`}>
