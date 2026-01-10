@@ -14,9 +14,11 @@ import {
     startMealReminders,
     stopAllReminders
 } from '../services/notifications';
+import { Chatbot } from '../components/Chatbot';
+import { MealSwapModal } from '../components/MealSwapModal';
 
 interface HomeProps {
-    onNavigate: (screen: 'home' | 'scanner' | 'profile' | 'streak' | 'rank') => void;
+    onNavigate: (screen: 'home' | 'scanner' | 'profile' | 'streak' | 'rank' | 'week') => void;
 }
 
 export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
@@ -128,13 +130,13 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                 fat: meal.fat,
                 carbs: meal.carbs,
                 fiber: meal.fiber,
-                goalFitScore: scores.goalFitScore,
-                gutHealthScore: scores.gutHealthScore,
-                goalFitReason: scores.goalFitReason,
-                gutHealthReason: scores.gutHealthReason,
+                goalFitScore: scores?.goalFitScore || 0,
+                gutHealthScore: scores?.gutHealthScore || 0,
+                goalFitReason: scores?.goalFitReason || '',
+                gutHealthReason: scores?.gutHealthReason || '',
                 cuisine: meal.region === 'all' ? 'Pan-Indian' : `${meal.region.charAt(0).toUpperCase() + meal.region.slice(1)} Indian`,
                 sodium: meal.sodium || 500,
-                servingSize: scores.suggestedServingSize || meal.servingSize || '1 serving'
+                servingSize: scores?.suggestedServingSize || meal.servingSize || '1 serving'
             });
             setShowScoreCard(true);
         }
@@ -199,6 +201,17 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     >
                         <span className="text-xl">🔥</span>
                         <span className="font-bold text-orange-500">{user?.streak || 0}</span>
+                    </motion.button>
+
+                    {/* Week Plan Button */}
+                    <motion.button
+                        onClick={() => onNavigate('week')}
+                        className="flex items-center gap-1 bg-purple-50 px-3 py-1.5 rounded-full"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <span className="text-lg">📅</span>
+                        <span className="font-semibold text-purple-500">Week</span>
                     </motion.button>
 
                     {/* Water tracker */}
@@ -494,6 +507,37 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
                     onAddToLog={handleAddToLog}
                 />
             )}
+
+            {/* Meal Swap Modal with Badges */}
+            {mealToSwap && (
+                <MealSwapModal
+                    isOpen={showSwapModal}
+                    meal={mealToSwap}
+                    mealType={mealToSwap.type}
+                    userGoal={user?.goal}
+                    onClose={() => {
+                        setShowSwapModal(false);
+                        setMealToSwap(null);
+                    }}
+                    onSwap={(name, calories, protein, carbs, fat, fiber) => {
+                        if (mealToSwap) {
+                            swapMeal(mealToSwap.type, {
+                                ...mealToSwap,
+                                name,
+                                calories,
+                                protein,
+                                carbs,
+                                fat,
+                                fiber: fiber || 0
+                            });
+                        }
+                    }}
+                    onGoToSearch={() => onNavigate('scanner')}
+                />
+            )}
+
+            {/* AI Chatbot Assistant */}
+            <Chatbot />
         </div>
     );
 };

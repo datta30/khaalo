@@ -126,3 +126,44 @@ export interface AIScoreResponse {
 export interface AIMealPlanResponse {
     days: DayPlan[];
 }
+
+// Chat Message
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    action?: ChatAction;
+}
+
+// Chat Action (when chatbot performs an operation)
+export interface ChatAction {
+    type: 'swap_meal' | 'update_goal' | 'update_calories' | 'suggest_meal';
+    params: any;
+    status: 'pending' | 'completed' | 'failed';
+    result?: string;
+}
+
+// Swap Badge for meal replacement suggestions
+export type SwapBadge = 'healthier' | 'tastier' | 'lighter' | 'protein' | 'fiber' | 'energy';
+
+export interface SwapSuggestion {
+    food: IndianFood;
+    badge: SwapBadge;
+    badgeLabel: string;
+    badgeEmoji: string;
+    reason: string;
+}
+
+// Indian Food from database
+export interface IndianFood {
+    code: string;
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    sodium: number;
+    source: string;
+}

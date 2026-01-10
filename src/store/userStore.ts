@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User, MealPlan, FoodLogEntry, MealNode, Meal, DayPlan } from '../types';
+import type { User, MealPlan, FoodLogEntry, MealNode, Meal, DayPlan, ChatMessage } from '../types';
 import { fallbackMealPlan } from '../data/fallbackPlan';
 
 // Water reminder type
@@ -72,6 +72,11 @@ interface UserState {
 
     // Daily Reward
     claimDailyReward: () => void;
+
+    // Chat
+    chatHistory: ChatMessage[];
+    addChatMessage: (message: ChatMessage) => void;
+    clearChatHistory: () => void;
 
     // Utilities
     getMealNodes: () => MealNode[];
@@ -167,6 +172,7 @@ export const useUserStore = create<UserState>()(
             waterGlasses: 0,
             waterGoal: 8,
             dailyRewardClaimed: false,
+            chatHistory: [],
 
             // User actions
             setUser: (user) => set({ user }),
@@ -350,6 +356,13 @@ export const useUserStore = create<UserState>()(
             addFoodLog: (entry) => set((state) => ({
                 todaysLogs: [...state.todaysLogs, entry]
             })),
+
+            // Chat actions
+            addChatMessage: (message) => set((state) => ({
+                chatHistory: [...state.chatHistory, message]
+            })),
+
+            clearChatHistory: () => set({ chatHistory: [] }),
 
             // Computed helpers
             getMealNodes: () => {

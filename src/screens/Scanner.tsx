@@ -3,9 +3,9 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useUserStore } from '../store/userStore';
 import { Button3D } from '../components/Button3D';
 import { ScoreCard } from '../components/ScoreCard';
-import { searchProducts, getFoodImage } from '../services/scanner';
+import { searchProducts, getFoodImage, searchIndianFoods } from '../services/scanner';
 import { scoreFoodItem, identifyFoodFromImage } from '../services/ai';
-import type { FoodItem, FoodLogEntry } from '../types';
+import type { FoodItem, FoodLogEntry, IndianFood } from '../types';
 
 interface ScannerProps {
     onNavigate: (screen: 'home' | 'scanner' | 'profile' | 'streak' | 'rank') => void;
@@ -29,6 +29,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<Partial<FoodItem>[]>([]);
+    const [indianFoodResults, setIndianFoodResults] = useState<IndianFood[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isScoring, setIsScoring] = useState(false);
     const [isIdentifying, setIsIdentifying] = useState(false);
@@ -37,7 +38,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
     const [error, setError] = useState<string | null>(null);
     const [showActionSelector, setShowActionSelector] = useState(false);
 
-    // Search for foods
+    // Search for foods - Indian dishes first, then packaged foods
     const handleSearch = useCallback(async () => {
         if (!searchQuery.trim()) return;
 
@@ -45,8 +46,15 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
         setError(null);
 
         try {
-            const results = await searchProducts(searchQuery, 8);
-            if (results.length === 0) {
+            // 1. Search Indian food database FIRST (local, instant)
+            const indianResults = searchIndianFoods(searchQuery, 6);
+            setIndianFoodResults(indianResults);
+
+            // 2. Search OpenFoodFacts for packaged foods
+            const packagedResults = await searchProducts(searchQuery, 6);
+
+            if (packagedResults.length === 0 && indianResults.length === 0) {
+                // No results from either source - show manual entry option
                 setSearchResults([{
                     name: searchQuery,
                     calories: 0,
@@ -57,8 +65,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                     imageUrl: getFoodImage(searchQuery)
                 }]);
             } else {
-                // Add food images to results
-                setSearchResults(results.map(r => ({
+                // Add food images to packaged results
+                setSearchResults(packagedResults.map(r => ({
                     ...r,
                     imageUrl: r.imageUrl || getFoodImage(r.name || 'food')
                 })));
@@ -94,19 +102,18 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                         setScoredFood({
                             id: crypto.randomUUID(),
                             name: result.name,
-                            calories: result.estimatedCalories,
-                            protein: result.estimatedProtein,
-                            fat: result.estimatedFat,
-                            carbs: result.estimatedCarbs,
-                            fiber: 0,
-                            goalFitScore: scores.goalFitScore,
-                            gutHealthScore: scores.gutHealthScore,
-                            goalFitReason: scores.goalFitReason,
-                            gutHealthReason: scores.gutHealthReason,
+                            calories: result.calories || 0,
+                            protein: result.protein || 0,
+                            fat: result.fat || 0,
+                            carbs: result.carbs || 0,
+                            fiber: result.fiber || 0,
+                            goalFitScore: scores?.goalFitScore || 0,
+                            gutHealthScore: scores?.gutHealthScore || 0,
+                            goalFitReason: scores?.goalFitReason || '',
+                            gutHealthReason: scores?.gutHealthReason || '',
                             imageUrl: base64,
-                            cuisine: result.cuisine,
-                            sodium: result.estimatedSodium || 500,
-                            servingSize: scores.suggestedServingSize || '1 serving'
+                            sodium: 500,
+                            servingSize: scores?.suggestedServingSize || '1 serving'
                         });
                         setShowScoreCard(true);
                     }
@@ -149,14 +156,14 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                 fat: 'fat' in food && food.fat ? food.fat : Math.floor(Math.random() * 20) + 5,
                 carbs: 'carbs' in food && food.carbs ? food.carbs : Math.floor(Math.random() * 40) + 20,
                 fiber: 'fiber' in food && food.fiber ? food.fiber : Math.floor(Math.random() * 10) + 2,
-                goalFitScore: scores.goalFitScore,
-                gutHealthScore: scores.gutHealthScore,
-                goalFitReason: scores.goalFitReason,
-                gutHealthReason: scores.gutHealthReason,
+                goalFitScore: scores?.goalFitScore || 0,
+                gutHealthScore: scores?.gutHealthScore || 0,
+                goalFitReason: scores?.goalFitReason || '',
+                gutHealthReason: scores?.gutHealthReason || '',
                 imageUrl: 'imageUrl' in food ? food.imageUrl : getFoodImage(foodName),
                 cuisine: 'cuisine' in food ? food.cuisine : 'Indian',
                 sodium: 'sodium' in food && typeof food.sodium === 'number' ? food.sodium : 400,
-                servingSize: scores.suggestedServingSize || '1 serving'
+                servingSize: scores?.suggestedServingSize || '1 serving'
             };
 
             setScoredFood(fullFood);
@@ -297,6 +304,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                             onClick={() => {
                                 setSearchQuery('');
                                 setSearchResults([]);
+                                setIndianFoodResults([]);
                             }}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         >
@@ -327,78 +335,135 @@ export const Scanner: React.FC<ScannerProps> = ({ onNavigate }) => {
                 </div>
             )}
 
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-                <div className="px-4 mb-4">
-                    <h3 className="text-sm font-bold text-gray-500 mb-3">SEARCH RESULTS</h3>
-                    <div className="space-y-2">
-                        {searchResults.map((food, index) => (
-                            <motion.button
-                                key={index}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleSelectFood(food)}
-                                className="w-full p-3 bg-gray-50 rounded-2xl flex items-center gap-3 hover:bg-gray-100 transition-colors text-left"
-                            >
-                                <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
-                                    <img
-                                        src={food.imageUrl || getFoodImage(food.name || 'food')}
-                                        alt={food.name}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = 'https://source.unsplash.com/100x100/?indian,food';
-                                        }}
-                                    />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <span className="font-semibold text-gray-800 block truncate">{food.name}</span>
-                                    {food.calories ? (
-                                        <span className="text-sm text-gray-400">{food.calories} kcal</span>
-                                    ) : (
-                                        <span className="text-sm text-[#58CC02]">Tap to analyze with AI</span>
-                                    )}
-                                </div>
-                                <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </motion.button>
-                        ))}
+            {/* Scrollable Results Container */}
+            <div className="flex-1 overflow-y-auto px-4 pb-20">
+                {/* Indian Dishes Results (from INDB database) */}
+                {indianFoodResults.length > 0 && (
+                    <div className="mb-4">
+                        <h3 className="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
+                            <span>🍛</span> INDIAN DISHES
+                            <span className="text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">From Database</span>
+                        </h3>
+                        <div className="space-y-2">
+                            {indianFoodResults.map((food, index) => (
+                                <motion.button
+                                    key={food.code}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() => handleSelectFood({
+                                        name: food.name,
+                                        calories: food.calories,
+                                        protein: food.protein,
+                                        carbs: food.carbs,
+                                        fat: food.fat,
+                                        fiber: food.fiber
+                                    })}
+                                    className="w-full p-3 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-2xl flex items-center gap-3 hover:from-orange-100 hover:to-amber-100 transition-colors text-left"
+                                >
+                                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+                                        <img
+                                            src={getFoodImage(food.name)}
+                                            alt={food.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-2xl">🍛</div>';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="font-semibold text-gray-800 block truncate">{food.name}</span>
+                                        <div className="flex gap-2 text-xs text-gray-500">
+                                            <span>{food.calories} kcal</span>
+                                            <span>•</span>
+                                            <span>{food.protein}g protein</span>
+                                        </div>
+                                    </div>
+                                    <svg className="w-5 h-5 text-orange-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </motion.button>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Popular Foods with Images */}
-            {searchResults.length === 0 && (
-                <div className="flex-1 px-4 overflow-y-auto pb-4">
-                    <h3 className="text-sm font-bold text-gray-500 mb-3">POPULAR INDIAN FOODS</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {popularFoods.map((food, index) => (
-                            <motion.button
-                                key={food.name}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleSelectFood(food)}
-                                className="rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all"
-                            >
-                                <div className="relative h-24 bg-gray-200">
-                                    <img
-                                        src={food.imageUrl}
-                                        alt={food.name}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                    <span className="absolute bottom-2 left-2 right-2 font-bold text-white text-sm">
-                                        {food.name}
-                                    </span>
-                                </div>
-                            </motion.button>
-                        ))}
+                {/* Packaged Foods Results (from OpenFoodFacts) */}
+                {searchResults.length > 0 && (
+                    <div className="px-4 mb-4">
+                        <h3 className="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
+                            <span>📦</span> PACKAGED FOODS
+                        </h3>
+                        <div className="space-y-2">
+                            {searchResults.map((food, index) => (
+                                <motion.button
+                                    key={index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() => handleSelectFood(food)}
+                                    className="w-full p-3 bg-gray-50 rounded-2xl flex items-center gap-3 hover:bg-gray-100 transition-colors text-left"
+                                >
+                                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+                                        <img
+                                            src={food.imageUrl || getFoodImage(food.name || 'food')}
+                                            alt={food.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = 'https://source.unsplash.com/100x100/?indian,food';
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="font-semibold text-gray-800 block truncate">{food.name}</span>
+                                        {food.calories ? (
+                                            <span className="text-sm text-gray-400">{food.calories} kcal</span>
+                                        ) : (
+                                            <span className="text-sm text-[#58CC02]">Tap to analyze with AI</span>
+                                        )}
+                                    </div>
+                                    <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </motion.button>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Popular Foods with Images */}
+                {searchResults.length === 0 && (
+                    <div className="flex-1 px-4 overflow-y-auto pb-4">
+                        <h3 className="text-sm font-bold text-gray-500 mb-3">POPULAR INDIAN FOODS</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {popularFoods.map((food, index) => (
+                                <motion.button
+                                    key={food.name}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() => handleSelectFood(food)}
+                                    className="rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-lg transition-all"
+                                >
+                                    <div className="relative h-24 bg-gray-200">
+                                        <img
+                                            src={food.imageUrl}
+                                            alt={food.name}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                        <span className="absolute bottom-2 left-2 right-2 font-bold text-white text-sm">
+                                            {food.name}
+                                        </span>
+                                    </div>
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Loading overlays */}
             {(isScoring || isIdentifying) && (

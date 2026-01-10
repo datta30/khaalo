@@ -1,6 +1,93 @@
-import type { FoodItem, OpenFoodFactsProduct } from '../types';
+import type { FoodItem, OpenFoodFactsProduct, IndianFood, SwapSuggestion, SwapBadge, Meal } from '../types';
+import { indianFoodsDB } from '../data/indianFoods';
 
 const OPENFOODFACTS_API = 'https://world.openfoodfacts.org/api/v2/product';
+
+/**
+ * Search Indian food database (local, fast)
+ */
+export const searchIndianFoods = (query: string, limit: number = 10): IndianFood[] => {
+    const searchTerm = query.toLowerCase().trim();
+    if (!searchTerm) return [];
+
+    return indianFoodsDB
+        .filter(food => food.name.toLowerCase().includes(searchTerm))
+        .slice(0, limit);
+};
+
+/**
+ * Get swap suggestions with badges for a meal
+ */
+export const getSwapSuggestions = (currentMeal: Meal, _mealType: 'breakfast' | 'snack' | 'lunch' | 'dinner'): SwapSuggestion[] => {
+    const suggestions: SwapSuggestion[] = [];
+    const currentCal = currentMeal.calories;
+
+    // Define badge criteria and find matching foods
+    const badgeCriteria: { badge: SwapBadge; emoji: string; label: string; filter: (f: IndianFood) => boolean; reason: string }[] = [
+        {
+            badge: 'healthier',
+            emoji: '🥗',
+            label: 'Healthier',
+            filter: (f) => f.calories < currentCal * 0.8 && f.protein > currentMeal.protein,
+            reason: 'Lower calories, higher protein'
+        },
+        {
+            badge: 'lighter',
+            emoji: '🍃',
+            label: 'Lighter',
+            filter: (f) => f.calories < 300 && f.fat < 10,
+            reason: 'Under 300 cal, low fat'
+        },
+        {
+            badge: 'protein',
+            emoji: '💪',
+            label: 'Protein-Rich',
+            filter: (f) => f.protein > 15,
+            reason: 'High protein (>15g)'
+        },
+        {
+            badge: 'fiber',
+            emoji: '🌿',
+            label: 'High-Fiber',
+            filter: (f) => f.fiber > 5,
+            reason: 'Great for digestion (>5g fiber)'
+        },
+        {
+            badge: 'energy',
+            emoji: '⚡',
+            label: 'Quick Energy',
+            filter: (f) => f.carbs > 30 && f.fat < 15,
+            reason: 'High carbs for energy'
+        },
+        {
+            badge: 'tastier',
+            emoji: '😋',
+            label: 'Tastier',
+            filter: (f) => f.calories >= currentCal * 0.9 && f.calories <= currentCal * 1.1,
+            reason: 'Popular choice, similar calories'
+        }
+    ];
+
+    // Find one food for each badge type
+    for (const criteria of badgeCriteria) {
+        const matching = indianFoodsDB
+            .filter(criteria.filter)
+            .filter(f => f.name !== currentMeal.name)
+            .slice(0, 1)[0];
+
+        if (matching) {
+            suggestions.push({
+                food: matching,
+                badge: criteria.badge,
+                badgeLabel: criteria.label,
+                badgeEmoji: criteria.emoji,
+                reason: criteria.reason
+            });
+        }
+    }
+
+    return suggestions.slice(0, 6); // Return max 6 suggestions
+};
 
 /**
  * Fetch product data from OpenFoodFacts by barcode

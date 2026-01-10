@@ -7,9 +7,10 @@ import { Scanner } from './screens/Scanner';
 import { Profile } from './screens/Profile';
 import { Streak } from './screens/Streak';
 import { Rank } from './screens/Rank';
+import { WeekPlanner } from './screens/WeekPlanner';
 import './index.css';
 
-type Screen = 'home' | 'scanner' | 'profile' | 'streak' | 'rank';
+type Screen = 'home' | 'scanner' | 'profile' | 'streak' | 'rank' | 'week';
 
 function App() {
   const { user, isOnboarding, startOnboarding } = useUserStore();
@@ -105,6 +106,19 @@ function App() {
             className="h-full"
           >
             <Rank onNavigate={handleNavigate} />
+          </motion.div>
+        )}
+
+        {currentScreen === 'week' && (
+          <motion.div
+            key="week"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="h-full"
+          >
+            <WeekPlanner onNavigate={handleNavigate} />
           </motion.div>
         )}
       </AnimatePresence>
